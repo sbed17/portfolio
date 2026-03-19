@@ -3,7 +3,7 @@
 **Tools:** Power BI, DAX, PowerQuery
 
 **Description:**  
-Comprehensive PowerBi infographic with insights about sales performance such as KPIs, revenue drivers and sales forecasts.
+Comprehensive PowerBI infographic with insights about sales performance such as KPIs, revenue drivers and sales forecasts.
 
 ## Preview
 <img width="808" height="421" alt="KPI_section" src="https://github.com/user-attachments/assets/b4668a20-27e6-4440-9463-6bbbda19291c" />
