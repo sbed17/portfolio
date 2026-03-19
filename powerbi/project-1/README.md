@@ -1,6 +1,7 @@
 # Project 1 – MarketMindz Dashboard
 
-**Tools:** Power BI, DAX, PowerQuery  
+**Tools:** Power BI, DAX, PowerQuery 
+
 **Description:**  
 Interactive Power BI report tracking sales KPIs, campaign performance, buyer composition and purchase drivers with drill-through capabilities.
 
