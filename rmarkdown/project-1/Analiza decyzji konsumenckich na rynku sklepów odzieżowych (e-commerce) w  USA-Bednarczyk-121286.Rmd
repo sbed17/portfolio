@@ -1,0 +1,543 @@
+---
+title: "Analiza decyzji konsumenckich na rynku sklepów odzieżowych (e-commerce) w USA"
+author: "Stanisław Bednarczyk"
+date: "`r Sys.Date()`"
+output: 
+  html_document:
+    theme: united
+    toc: true 
+    toc_float: true
+    toc_depth: 3
+    code_folding: hide
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = TRUE,
+  message = FALSE,
+  warning = FALSE,
+  fig.width = 12,
+  fig.height = 6,
+  fig.align = "center"
+)
+```
+
+# Wprowadzenie i opis problemu
+
+## Wstęp teoretyczny i kontekst tematu
+
+Rynek e‑commerce w Stanach Zjednoczonych należy do najbardziej rozwiniętych i konkurencyjnych na świecie. Segment odzieżowy stanowi jeden z jego kluczowych elementów, łącząc w sobie zarówno wysoki wolumen sprzedaży jak i dynamiczne zmiany w zachowaniach konsumentów. W ostatnich latach obserwuje się wyraźne przesunięcie preferencji zakupowych z tradycyjnych sklepów stacjonarnych w stronę kanałów cyfrowych, co wynika z rosnącej dostępności technologii mobilnych, wygody zakupów online oraz szerokiej oferty produktowej dostępnej na platformach e‑commerce. Zjawisko to tworzy bogaty kontekst do analizy czynników wpływających na decyzje zakupowe konsumentów.
+
+## Uzasadnienie wyboru zagadnienia
+
+W kontekście analizy  i wizualizacji danych szczególnie interesujące jest badanie, w jaki sposób różne cechy produktów i konsumentów wpływają na decyzje zakupowe. Zrozumienie tych zależności pozwala nie tylko opisać zachowania konsumentów, ale również formułować praktyczne rekomendacje dla firm działających w sektorze e‑commerce. Analiza decyzji konsumenckich w branży odzieżowej w USA stanowi więc wartościowy obszar badawczy, łączący perspektywę ekonomiczną, marketingową i analityczną.
+
+## Cel analizy i pytania badawcze
+
+### Cel analizy
+
+Celem analizy jest zbadanie sektora odzieżowego e-commerce W USA pod kątem wpływu różnych czynników na podejmowane decyzje konsumenckie oraz pokazanie tych zależności w formie zwizualizowanej.
+
+### Pytania badawcze
+
+**1. Czy, i w jaki sposób zmienne demograficzne wpływają na podejmowane decyzje konsumenckie?**
+
+**2. Jak różnią się od siebie konsumenci w róźnych regionach (stanach)?**
+
+**3. Które kategorie produktów sprzedają się najlepiej?**
+
+**4. Jakie ubrania są najchętniej kupowane?**
+
+**5. Ile klientów posiada subskrypcję (brand loyalty)?**
+
+**6. Jaka część osób używa rabatów i kodów promocyjnych?**
+
+**7. Jakie metody płatności są najczęściej wybierane?**
+
+**8. Jakie metody dostawy są najbardziej popularne?**
+
+# Opis danych i przygotowanie
+
+```{r packages, include=FALSE}
+options(repos = c(CRAN = "https://cloud.r-project.org"))
+install.packages("maps")
+```
+
+```{r libs, include=FALSE}
+library(dplyr)
+library(ggplot2)
+library(graphics)
+library(lattice)
+library(tidyverse)
+library(knitr)
+library(viridis)
+library(maps)
+library(gridExtra)
+```
+
+```{r data}
+df <- read.csv("shopping_behavior_updated.csv")
+```
+
+## Źródło danych i charakterystyka zbioru
+
+### Źródło danych
+
+Dane pochodzą z Kaggle: https://www.kaggle.com/datasets/ranaghulamnabi/shopping-behavior-and-preferences-study
+
+### Charakterystyka zbioru
+
+Dane przedstawiają rynek odzieżowy e-commerce w USA. Zbiór zawiera 18 kolumn i 3900 obserwacji bez wartości brakujących. Każda obserwacja to jeden zakup jednego klienta.  
+
+```{r NA, include=FALSE}
+(colSums(is.na(df)))
+```
+
+## Opis zmiennych
+
+| Zmienna | Typ | Opis |
+|--------------------------------|------------------|----------------------|
+| `customer_id` | numeryczna |ID konsumenta |
+| `age` | numeryczna |wiek |
+| `gender` | kategoryczna | płeć |
+| `item_purchased` | kategoryczna | zakupiony produkt (np. jeansy) |
+| `category` | kategoryczna | kategoria zakupionego produktu (np. akcesoria, obuwie) |
+| `amount_usd` | numeryczna | wartość koszyka w USD |
+| `state` | kategoryczna | stan |
+| `size` | kategoryczna | rozmiar produktu |
+| `color` | kategoryczna | kolor produktu |
+| `season` | kategoryczna | pora roku |
+| `review_rating` | numeryczna | ocena procesu zamówienia przez konsumenta (2.5 - 5) |
+| `subscription_status` | kategoryczna | Czy klient posiada subskrypcję? ("Yes", "No") |
+| `shipping_type` | kategoryczna| Forma wysyłki (np. "Express", "Next Day Air") |
+| `discount` | kategoryczna | Czy rabat? ("Yes", "No") |
+| `promo_code` | kategoryczna | Czy kod zniżkowy? ("Yes", "No") |
+| `previous_purchases` | numeryczna | liczba poprzednich zakupów |
+| `payment_method` | kategoryczna | metoda płatności |
+| `purchase_freq` | kategoryczna | częstość zakupów (np. "Weekly", "Fortnightly") |
+
+
+## Uwagi metodyczne
+
+Początkowo nazwy kolumn w zbiorze zawierały wielkie litery oraz kropki. Wielkie litery zostały zastąpione małymi, a kropki znakiem "_". Dodatkowo kolumny początkowo nazywające się: "Purchase.Amount..USD", "Location",
+"Discount.Applied", "Promo.Code.Used", "Frequency.of.Purchases" zostały przemianowane odpowiednio na: "amount_usd", "state", "discount", "promo_code", "purchase_freq".
+
+```{r col-names change}
+df <- df %>% 
+  rename(customer_id = Customer.ID) %>% 
+  rename(age = Age) %>% 
+  rename(gender = Gender) %>% 
+  rename(item_purchased = Item.Purchased) %>% 
+  rename(category = Category) %>% 
+  rename(amount_usd = Purchase.Amount..USD.) %>% 
+  rename(state = Location) %>% 
+  rename(size = Size) %>% 
+  rename(color = Color) %>% 
+  rename(season = Season) %>% 
+  rename(review_rating = Review.Rating) %>% 
+  rename(subscription_status = Subscription.Status) %>% 
+  rename(shipping_type = Shipping.Type) %>% 
+  rename(discount = Discount.Applied) %>% 
+  rename(promo_code = Promo.Code.Used) %>% 
+  rename(previous_purchases = Previous.Purchases) %>% 
+  rename(payment_method = Payment.Method) %>% 
+  rename(purchase_freq = Frequency.of.Purchases)
+```
+
+# Analiza eksploracyjna danych
+
+## Zmienne demograficzne
+
+### Struktura demograficzna
+
+Na wykresie widzimy zdecydowaną dominację mężczyzn co ogólnie rzecz biorąc jest dosyć zaskakujące. Praktycznie w każdym binie jest ich na oko dwukrotnie więcej. Powodem tego może być przypadkowo męsko-centryczna próba albo zbiór zawierający dane dla sklepów oferujących więcej kolekcji męskich. Jako że zbiór danych nie posiada kolumny zawierającej nazwe sklepu, jest to niemożliwe do zweryfikowania. Kolejnym powodem może być także inne podejśćie  kobiet i mężczyzn do zakupu ubrań. Być może trafne jest stwierdzenie, że kobietom bardziej zależy na dobrym dopasowaniu ubrań, więc wolą kupować ubrania w sklepie stacjonarnym dopiero po przymierzeniu. Niemniej jednak jest to dosyć spekulatywne. 
+
+Zarówno w przypadku kobiet jak i mężczyzn, obserwacje są dosyć równomiernie rozłożone między grupami wiekowymi.
+W przypadku kobiet najwięcej kupowały kobiety w wieku 40-50 lat i wyraźnie najmniej kobiety w wieku 65+. 
+W przypadku mężczyzn najwięcej kupowali mężczyźni w wieku około 30 i 55 lat. Zdecydowanie mniej kupowali mężczyźni w wieku około 45 lat i 70 lat.
+
+```{r demografia}
+
+df_demo <- df %>% 
+  select(age, gender)
+
+# Histogram wieku z podziałem na płeć
+
+ggplot(df_demo, aes(x = age, fill = gender)) +
+  geom_histogram(binwidth = 5, position = "identity", alpha = 0.5, color = "black") +
+  scale_x_continuous(breaks = seq(0, 100, by = 10)) +
+  labs(title = "Histogram wieku z podziałem na płeć",
+       x = "Wiek",
+       y = "Liczba obserwacji",
+       fill = "Płeć") +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5, face = "bold")) 
+
+
+```
+
+### Płeć a wartość koszyka
+
+Boxploty dla kobiet i mężczyzn są prawie identyczne, co mocno sugeruje że dane są sztuczne. Mediana wartości koszyka dla obu płci to $60. 75% kobiet i mężczyzn nie wydaje więcej niż $80 na jednorazowe zakupy. Nie ma żadnych outlierów, a najmniejsze i największe zakupy w przypadku obu płci wynosiły odpowiednio $20 i $100. 
+To jeszcze mocniej potwierdza potencjalną sztuczność zbioru danych. Jest to bardzo mało prawdopodobne, żeby spośrod spośród 3900 osób nikt nie wydał więcej niz $100 albo mniej niż $20 na zakup ubrań online.
+
+```{r płeć vs wartość koszyka}
+# boxplot wartości koszyka z podziałem na płeć
+ggplot(df, aes(x = gender, y = amount_usd, fill = gender)) +
+  geom_boxplot(alpha = 0.7) +                        
+  theme_minimal() +
+  labs(title = "Płeć a wartość koszyka",
+       x = "Płeć",
+       y = "Wartość koszyka w USD") +
+  theme(plot.title = element_text(hjust = 0.5, face = "bold"),
+        legend.position = "none") 
+```
+
+## Analiza regionalna
+
+### Top 10 stanów pod względem liczby klientów
+
+Stanem z największą liczbą klientów była Montana z 96 klientami. Na podium uplasowały się także California i Idaho. Pośrodku rankingu umieściły się Illinois, Alabama, Minnesota, Nebraska, Nevada oraz Nowy Jork. Na ostatnim miejscu ex aequo znalazły się Delaware i Maryland. Wyniki dosyć zaskakujące. Brak Teksasu, Florydy i Pensylwanii w rankingu pomimo bardzo dużej populacji każdego z tych stanów. Nowy Jork też nie jest w ścisłej czołówce, co może być spowodowane np. lepszą dostepnością sklepów stacjonarnych.   
+
+```{r top 10 states}
+df_state_top10 <- df %>% 
+  count(state, sort = TRUE) %>% 
+  slice_max(n, n = 10)
+
+
+
+# Barchart top 10 stanów
+
+ggplot(df_state_top10, aes(x = reorder(state, -n), y = n, fill = n)) +
+  geom_col() +
+  scale_fill_gradient(
+    low = "#ccffcc",
+    high = "#006600") +
+  labs(
+    title = "Top 10 stanów pod względem liczby klientów",
+    y = "Liczba klientów",
+    x = NULL) +
+  scale_y_continuous(breaks = seq(0, 100, by = 10)) +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5, face = "bold"),
+        axis.text.x = element_text(face = "bold"),
+        legend.position = "none")
+```
+
+### Średnia wartość koszyka per stan
+
+Na wykresie widzimy, że stany z największa średnią wartością koszyka to Pennsylvania i Arizona (około $67) a z najmniejszą to Kansas i mniejsze stany wschodniego wybrzeża tj. Connecticut, Delaware oraz Maryland (około $54). Wysokie wartości zanotowały także West Virginia, Washington, Tennessee i Dakota Północna. Na podstawie wykresu ciężko stwierdzić jednoznaczną zależność pomiędzy położeniem geograficznym, a średnią wartością koszyka. 
+
+```{r mean amount per state}
+
+df_mean_amount_state <- df %>% 
+  select(state, amount_usd) %>% 
+  group_by(state) %>% 
+  summarise(avg_amount = mean(amount_usd))
+
+usa_map <- map_data("state")
+
+df_mean_amount_state$state_lower <- tolower(df_mean_amount_state$state)
+
+map_df <- usa_map %>% 
+  left_join(df_mean_amount_state, by = c("region" = "state_lower"))
+
+ggplot(map_df, aes(long, lat, group = group, fill = avg_amount)) +
+  geom_polygon(color = "white", size = 0.2) +
+  coord_fixed(1.3) +
+  scale_fill_gradient(low = "#ccffcc", high = "#006600") +
+  labs(
+    title = "Średnia wartość koszyka per stan (bez Alaski i Hawajów)",
+    fill = "Średnia [USD]"
+  ) +
+  theme_minimal() +
+  theme(
+    axis.title = element_blank(),
+    axis.text = element_blank(),
+    axis.ticks = element_blank(),
+    panel.grid = element_blank(),
+    plot.title = element_text(hjust = 0.5, face = "bold")
+  )
+```
+
+## Analiza popularności produktów
+
+### Popularność kategorii
+
+Na wykresie kołowym widzimy zdecydowaną dominację odzieży z blisko połową obserwacji. Jest to dosyć standardowe ponieważ oferta większości sklepów odzieżowych składa się głównie z ubrań np. dżinsy, koszule, bluzy i tego też konsumenci najczęściej potrzebują. Na drugim miejscu są akcesoria z blisko 1/3 obserwacji. Może to być spowodowane tym, że niektóre ubrania i akcesoria są do pewnego stopnia komplementarne np. spodnie często potrzebują paska. Obuwie stanowi zaledwie 15% wszytskich zakupów, a najmniej odzież wierzchnia - 8%. Biorąc pod uwage klimat niektórych stanów takich jak Floryda, Kalifornia czy Nowy Meksyk gdzie temperatura jest stosunkowo wysoka przez cały rok, można było się spodziewać, że np. kurtki nie będą najbardziej pożądanym produktem.
+
+```{r top categories}
+
+df %>% 
+  count(category) %>% 
+  mutate(pct = n / sum(n)) %>% 
+  ggplot(aes(x = "", y = pct, fill = category)) +
+  geom_col(width = 1) +
+  scale_fill_brewer(palette = "Purples") +
+  geom_text(aes(label = scales::percent(pct)),
+            position = position_stack(vjust = 0.5)) +
+  coord_polar(theta = "y") +
+  theme_void() +
+  labs(title = "Udział kategorii (%)",
+       fill = "Kategoria") +
+  theme(plot.title = element_text(hjust = 0.5, face = "bold"))
+
+
+
+```
+
+### Najpopularniejsze kolory między płciami
+
+U kobiet dominuje kolor żółty wraz z oliwkowym i różowym na podium. Mężczyźni na ogół wybierali nieco bardziej stonowane barwy z wyjątkiem cyjanku i żółtego. Co ciekawe dla obu płci kolor żółty i oliwkowy był bardzo popularny. Zaskakujące jest też, że na żadnym wykresie nie pojawia się ani kolor czarny ani biały, szeroko uważane za kolory bardzo uniwersalne i dobrze pasujące do wielu innych kolorów. 
+
+```{r top size col w/ gender}
+df_female <- df %>% 
+  select(color, gender) %>% 
+  filter(gender == "Female")
+
+df_male <- df %>% 
+  select(color, gender) %>% 
+  filter(gender == "Male")
+
+df_female_top_col <- df_female %>% 
+  count(color, sort = TRUE) %>% 
+  slice_max(n, n = 5)
+
+df_male_top_col <- df_male %>% 
+  count(color, sort = TRUE) %>% 
+  slice_max(n, n = 5)
+
+fem_cols <- c(
+  "Yellow" = "#FFFF00", 
+  "Olive" = "#808000", 
+  "Pink" = "#FFC0CB", 
+  "Magenta" = "#FF00FF", 
+  "Green" = "#008000"
+)
+
+male_cols <- c(
+  "Silver" = "#C0C0C0", 
+  "Cyan" = "#00FFFF", 
+  "Teal" = "#008080", 
+  "Olive" = "#808000", 
+  "Yellow" = "#FFFF00"
+)
+
+par(mfrow = c(1, 2))
+
+b1 <- ggplot(df_female_top_col, aes(x = reorder(color, -n), y = n, fill = color)) +
+  geom_col() +
+  scale_fill_manual(values = fem_cols) +
+  labs(
+    title = "Top 5 kolorów wybieranych przez kobiety",
+    y = "Liczba wyborów",
+    x = NULL) +
+  scale_y_continuous(breaks = seq(0, 65, by = 5)) +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5, face = "bold"),
+        axis.text.x = element_text(face = "bold"),
+        legend.position = "none")
+
+b2 <- ggplot(df_male_top_col, aes(x = reorder(color, -n), y = n, fill = color)) +
+  geom_col() +
+  scale_fill_manual(values = male_cols) +
+  labs(
+    title = "Top 5 kolorów wybieranych przez mężczyzn",
+    y = "Liczba wyborów",
+    x = NULL) +
+  scale_y_continuous(breaks = seq(0, 130, by = 10)) +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5, face = "bold"),
+        axis.text.x = element_text(face = "bold"),
+        legend.position = "none")
+
+grid.arrange(b1, b2, ncol = 2)
+  
+```
+
+### Najpopularniejsze produkty w podziale na płeć
+
+Dla kobiet najpopularniejszym produktem były bluzki, kupione około 65 razy. Na podium znalazły się także koszulki i sandały, zakupione w obu przypadkach około 60 razy. Jeśli chodzi o mężczyzn to na pierwszym miejscu, bez zaskoczenia, znalazły się spodnie z blisko 125 zakupami. Popularnymi produktem była też biżuteria, około 120 zakupów. Ex aequo na 3. miejscu wśród mężczyzn uplasowały się swetry, sukienki i kurtki z około 115 zakupami. Na pierwszy rzut oka może się wydawać dziwne, że mężczyźni kupują aż tyle sukienek. Prawdopodobnie większość kupuje je w formie prezentu dla np. żony lub córki.
+
+
+```{r top products w/ gender}
+
+df_top3 <- df %>% 
+  count(gender, item_purchased, sort = TRUE) %>% 
+  group_by(gender) %>% 
+  slice_max(n, n = 3) %>% 
+  ungroup()
+
+ggplot(df_top3, aes(x = reorder(item_purchased, n), y = n, fill = gender)) +
+  geom_col() +
+  coord_flip() +
+  facet_wrap(~ gender, scales = "free_y") +
+  labs(
+    title = "Top 3 kupowane produkty z podziałem na płeć",
+    x = "Produkt",
+    y = "Liczba zakupów"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(hjust = 0.5, face = "bold"),
+    strip.text = element_text(face = "bold"),
+    legend.position = "none",
+    axis.title.x = element_text(margin = margin(t = 10), face = "bold"),
+    axis.title.y = element_text(face = "bold")
+  )
+
+```
+
+## Rozkład ocen zamówień
+
+Krzywa gęstości jest stosunkowo płaska, co oznacza, że oceny są rozproszone w miarę równomiernie w przedziale od 2.5 do 5.0. Nie występuje wyraźna dominacja jednej wartości, choć można zauważyć lekkie zagęszczenie w okolicach 3.0, 3.5 i 4.0, co może sugerować ogólnie pozytywny odbiór produktów. Rozkład jest też bardzo symetryczny, co znowu może świadczyć o sztuczności danych.
+
+```{r review prev purchases}
+ggplot(df, aes(x = review_rating)) +
+  geom_density(fill = "purple", alpha = 0.6) + 
+  labs(title = "Rozkład ocen zamówień",
+       x = "Ocena",
+       y = "Gęstość") +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5, face = "bold"),
+        axis.title.y = element_text(vjust = 0.8)
+  )
+
+```
+
+## Rozmiary, pory roku, rabaty i subskrypcje 
+
+Piechart rozmiarów pokazuje wyraźną dominację rozmiaru L, który stanowi prawie połowę wszystkich zakupów. M i S również są popularne, natomiast XL pojawia się najrzadziej. Zakupy według pór roku są rozłożone bardzo równomiernie, co sugeruje brak wyraźnej sezonowości i stabilny popyt przez cały rok (albo bardziej prawdopodobne - sztuczność danych. W przypadku zniżek widać, że większość klientów kupuje bez rabatów, choć niemal połowa transakcji nadal korzysta z promocji. Najsilniejszy sygnał dotyczy subskrypcji - zdecydowana większość klientów ma aktywny status, co wskazuje na wysoki poziom zaangażowania i lojalności wobec marki.
+
+``` {r code piecharts selected}
+
+par(mfrow = c(2, 2))
+
+p1 <- df %>% 
+  count(size) %>% 
+  mutate(pct = n / sum(n)) %>% 
+  ggplot(aes(x = "", y = pct, fill = size)) +
+  geom_col(width = 1) +
+  scale_fill_brewer(palette = "Greens") +
+  geom_text(aes(label = scales::percent(pct)),
+            position = position_stack(vjust = 0.5)) +
+  coord_polar(theta = "y") +
+  theme_void() +
+  labs(title = "Udział rozmiarów (%)",
+       fill = "Rozmiary") +
+  theme(plot.title = element_text(hjust = 0.5))
+
+p2 <- df %>% 
+  count(season) %>% 
+  mutate(pct = n / sum(n)) %>% 
+  ggplot(aes(x = "", y = pct, fill = season)) +
+  geom_col(width = 1) +
+  scale_fill_brewer(palette = "Purples") +
+  geom_text(aes(label = scales::percent(pct)),
+            position = position_stack(vjust = 0.5)) +
+  coord_polar(theta = "y") +
+  theme_void() +
+  labs(title = "Udział pór roku (%)",
+       fill = "Pora roku") +
+  theme(plot.title = element_text(hjust = 0.5))
+
+p3 <- df %>% 
+  count(discount) %>% 
+  mutate(pct = n / sum(n)) %>% 
+  ggplot(aes(x = "", y = pct, fill = discount)) +
+  geom_col(width = 1) +
+  scale_fill_brewer(palette = "Oranges") +
+  geom_text(aes(label = scales::percent(pct)),
+            position = position_stack(vjust = 0.5)) +
+  coord_polar(theta = "y") +
+  theme_void() +
+  labs(title = "Udział zakupów ze zniżką i bez (%)",
+       fill = "") +
+  theme(plot.title = element_text(hjust = 0.5))
+
+p4 <- df %>% 
+  count(subscription_status) %>% 
+  mutate(pct = n / sum(n)) %>% 
+  ggplot(aes(x = "", y = pct, fill = subscription_status)) +
+  geom_col(width = 1) +
+  scale_fill_brewer(palette = "Blues") +
+  geom_text(aes(label = scales::percent(pct)),
+            position = position_stack(vjust = 0.5)) +
+  coord_polar(theta = "y") +
+  theme_void() +
+  labs(title = "Status subskrypcji (%)",
+       fill = "") +
+  theme(plot.title = element_text(hjust = 0.5))
+
+grid.arrange(p1, p2, p3, p4, ncol = 2)
+
+```
+
+## Metody dostawy
+
+Wykres przedstawia popularność metod dostawy wśród klientów. Klienci są dosyć równomiernie rozłożeni pomiędzy poszczególnymi metodami. Najczęściej wybieraną opcją jest Free Shipping. Na kolejnych miejscach znajdują się Standard oraz Store Pickup, natomiast najmniejszym zainteresowaniem cieszy się 2-Day Shipping. Klienci preferują darmowe formy dostawy, co może świadczyć o wrażliwości na koszty dodatkowe.
+
+```{r shipments}
+df_ship <- df %>% 
+  count(shipping_type, sort = TRUE)
+
+ggplot(df_ship, aes(x = reorder(shipping_type, -n), y = n, fill = n)) +
+  geom_col() +
+  scale_fill_gradient(
+    low = "#ccffcc",
+    high = "#006600") +
+  labs(
+    title = "Popularność metod dostaw",
+    y = "Ilość obserwacji",
+    x = NULL,
+    fill = "") +
+  scale_y_continuous(breaks = seq(0, 700, by = 50)) +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5, face = "bold"),
+        axis.text.x = element_text(face = "bold"))
+
+```
+
+## Metody płatności
+
+Wykres przedstawia popularność metod płatności wśród klientów. Najczęściej wybieraną opcją jest PayPal, tuż za nim plasują się Credit Card i Cash, co wskazuje na dominację szybkich i powszechnie dostępnych form płatności. Mniej popularne są Debit Card, Venmo oraz Bank Transfer, który znalazł się na końcu zestawienia. Klienci preferują wygodne i natychmiastowe metody płatności.
+
+```{r payments}
+df_pay <- df %>% 
+  count(payment_method, sort = TRUE)
+
+ggplot(df_pay, aes(x = reorder(payment_method, n), y = n, fill = n)) +
+  geom_col() +
+  coord_flip() +
+  scale_fill_gradient(
+    low = "#ccffcc",
+    high = "#006600") +
+  labs(
+    title = "Popularność metod płatności",
+    y = NULL,
+    x = "Metoda płatności",
+    fill = "") +
+  scale_y_continuous(breaks = seq(0, 700, by = 50)) +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5, face = "bold"),
+        axis.text.x = element_text(face = "bold"),
+        axis.text.y = element_text(face = "bold"),
+        axis.title.y = element_text(face = "bold"))
+```
+
+# Wnioski i refleksje
+
+## Wnioski
+
+Analiza rynku odzieżowego e-commerce w USA pokazuje wyraźną przewagę mężczyzn wśród klientów oraz równomierny rozkład wieku w obu grupach, co sugeruje brak jednoznacznego profilu demograficznego. Wartość koszyka okazała się niemal identyczna dla obu płci, a jej niska zmienność może wskazywać na ograniczoną różnorodność danych lub ich sztucznosć. Rozkład klientów między stanami jest nietypowy - dominują regiony o stosunkowo małej populacji, podczas gdy duże stany są słabo reprezentowane. Jednocześnie średnia wartość koszyka różni się między stanami, lecz nie wykazuje wyraźnych zależności geograficznych.
+
+W strukturze zakupów zdecydowanie przeważa odzież, a akcesoria stanowią istotny, choć mniejszy udział. Preferencje kolorystyczne różnią się między płciami, choć pewne barwy - jak żółty i oliwkowy - są popularne w obu grupach. Najczęściej kupowane produkty również różnią się między kobietami i mężczyznami, co pokazuje odmienne potrzeby zakupowe. Rozkład ocen zamówień jest równomierny i symetryczny, co może wskazywać na brak silnych emocji w ocenach lub na ograniczoną zmienność danych.
+
+Udział poszczególnych rozmiarów, pór roku, zniżek i statusów subskrypcji pokazuje dominację rozmiaru M, brak sezonowości zakupów, częste użycie rabatów i kodów promocyjnych oraz stosunkowo wysoki poziom subskrypcji wśród klientów. W przypadku metod dostawy klienci najczęściej wybierają darmową wysyłkę, co potwierdza ich wrażliwość na dodatkowe koszty. Jeśli chodzi o preferowane metody płatności, to większość klientow korzysta z PayPal lub karty kredytowej. Najrzadszą formą płatności jest przelew bankowy, prawdopodobnie ze względu na jego czasochłonność.
+
+## Refleksje
+
+Analiza mogłaby skorzystać przede wszystkim na wiekszej ilości obserwacji oraz prawdziwych danych (te użyte w analizie są prawie napewno sztuczne). Dodatkowo, brakuje zmiennych które mogłyby znacznie ulepszyć analize. Nie ma zmiennej czasowej, co uniemożliwia analize trendu sprzedaży w czasie. Brakuje też zmiennej zawierającej nazwe sklepu, w którym zakup był dokonany co z kolei sprawia, że nie można zidentyfikować ulubionych sklepów konsumentów. Ponadto, uzycie metod statystycznych (np. testowanie hipotez, regresja liniowa wartości koszyka) mogłyby zaoferować wgląd w głębsze zależności, i co za tym idzie, w trafniejsze wnioski. Niemniej jednak, analiza oferuje krótki przegląd danych w formie zwizualizowanej na temat rynku odzieżowego e-commerce W USA, co daje podstawe do dalszych analiz.
+
+
+
