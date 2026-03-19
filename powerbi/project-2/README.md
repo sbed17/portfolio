@@ -1,6 +1,7 @@
 # Project 2 – Kraken Koffee Infographic
 
-**Tools:** Power BI, DAX, PowerQuery  
+**Tools:** Power BI, DAX, PowerQuery
+
 **Description:**  
 Comprehensive PowerBi infographic with insights about sales performance such as KPIs, revenue drivers and sales forecasts.
 
