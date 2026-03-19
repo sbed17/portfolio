@@ -1,6 +1,6 @@
 # Project 3 – AustIntel Report
 
-**Tools:** Power Bi, DAX, PowerQuery
+**Tools:** Power BI, DAX, PowerQuery
 
 **Description:**  
 An interactive report offering 4 distinct views for discovering real estate insights of Austin, Texas.
