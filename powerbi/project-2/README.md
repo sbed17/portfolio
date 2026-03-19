@@ -12,7 +12,7 @@ Comprehensive PowerBi infographic with insights about sales performance such as 
 
 
 ## Files
-- `Project2 Kraken Koffee Infographic.pbix` – full Power BI report
+- `Kraken Koffee Infographic.pbix` – full Power BI report
 
 ## How to open
 1. Download the `.pbix` file
